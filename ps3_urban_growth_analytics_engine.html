@@ -1,0 +1,621 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--bg2:#0a0f1c;--bg3:#111827;--bg4:#1a2235;
+  --border:#1e2d45;--border2:#2a3f60;
+  --txt:#c8d8f0;--txt2:#6a85a8;--txt3:#3a4f6a;
+  --green:#00e676;--green2:#00c853;--green3:#003318;
+  --amber:#ffab00;--amber2:#ff8f00;--amber3:#3d2800;
+  --red:#ff1744;--red2:#d50000;--red3:#3d0010;
+  --blue:#2979ff;--blue2:#1a56cc;--blue3:#001540;
+  --cyan:#00e5ff;--cyan2:#00b8d4;
+  --purple:#d500f9;--purple2:#aa00ff;
+  --heat1:#fff176;--heat2:#ffb300;--heat3:#ff6d00;--heat4:#dd2c00;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Syne',sans-serif;
+}
+
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:13px;min-height:100vh;overflow-x:hidden}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.hdr-brand{display:flex;align-items:center;gap:10px}
+.brand-name{font-size:12px;font-weight:700;letter-spacing:3px;color:var(--txt2);font-family:var(--mono)}
+.brand-name span{color:var(--green)}
+.badge{font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:3px;font-weight:700;letter-spacing:2px}
+.badge.live{background:var(--green3);color:var(--green);border:1px solid var(--green2);animation:pulse 2s infinite}
+.badge.ai{background:var(--blue3);color:var(--blue);border:1px solid var(--blue2)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+.hdr-meta{display:flex;gap:20px}
+.meta-chip{font-size:10px;color:var(--txt2);font-family:var(--mono)}
+.meta-chip b{color:var(--txt);font-weight:500}
+
+.layout{display:grid;grid-template-columns:280px 1fr 280px;height:calc(100vh - 43px);overflow:hidden}
+
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sidebar.right{border-right:none;border-left:1px solid var(--border)}
+.s-hdr{font-size:9px;letter-spacing:2.5px;font-weight:700;color:var(--txt3);padding:12px 16px 8px;font-family:var(--mono);border-bottom:1px solid var(--border)}
+
+.zone-card{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.zone-card:hover,.zone-card.active{background:var(--bg3)}
+.zone-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.zone-name{font-size:11px;font-weight:700;font-family:var(--mono)}
+.gvs-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;font-family:var(--mono)}
+.gvs-high{background:rgba(221,44,0,.2);color:#ff6d00;border:1px solid rgba(221,44,0,.4)}
+.gvs-med{background:rgba(255,171,0,.15);color:var(--amber);border:1px solid rgba(255,171,0,.3)}
+.gvs-low{background:rgba(41,121,255,.15);color:var(--blue);border:1px solid rgba(41,121,255,.3)}
+.zone-meta{font-size:10px;color:var(--txt2);font-family:var(--mono);line-height:1.7}
+.signal-bar{height:3px;background:var(--bg4);border-radius:2px;margin-top:6px;overflow:hidden}
+.signal-fill{height:100%;border-radius:2px;transition:width .6s}
+
+.center{background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.map-wrap{flex:1;position:relative;overflow:hidden}
+canvas#heatmap{display:block;width:100%;height:100%}
+
+.controls{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:6px;z-index:10}
+.ctrl-btn{background:rgba(10,15,28,.85);border:1px solid var(--border);color:var(--txt2);padding:5px 10px;border-radius:4px;font-size:10px;cursor:pointer;font-family:var(--mono);letter-spacing:1px;transition:all .15s;backdrop-filter:blur(4px)}
+.ctrl-btn:hover,.ctrl-btn.active{border-color:var(--border2);color:var(--txt)}
+.ctrl-btn.active{background:rgba(41,121,255,.15);border-color:var(--blue2);color:var(--blue)}
+
+.legend-box{position:absolute;bottom:50px;left:12px;background:rgba(10,15,28,.9);border:1px solid var(--border);border-radius:6px;padding:10px 12px;z-index:10;backdrop-filter:blur(4px)}
+.legend-title{font-size:9px;letter-spacing:2px;color:var(--txt3);font-family:var(--mono);margin-bottom:8px;font-weight:700}
+.legend-heat{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.heat-gradient{width:80px;height:8px;border-radius:4px;background:linear-gradient(to right,#fff176,#ffb300,#ff6d00,#dd2c00)}
+.legend-labels{display:flex;justify-content:space-between;width:80px;font-size:9px;color:var(--txt3);font-family:var(--mono)}
+.legend-dot-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:10px;color:var(--txt2);font-family:var(--mono)}
+.ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+.data-stream{height:34px;background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;gap:0;overflow:hidden;flex-shrink:0}
+.stream-lbl{font-size:9px;letter-spacing:2px;color:var(--txt3);font-family:var(--mono);padding:0 12px;flex-shrink:0}
+.stream-items{display:flex;gap:8px;overflow:hidden;flex:1;padding:0 8px;align-items:center}
+.stream-item{font-size:9px;font-family:var(--mono);color:var(--txt2);white-space:nowrap;flex-shrink:0;padding:2px 6px;border-radius:3px;background:var(--bg3)}
+.stream-item.new{color:var(--green);background:var(--green3);border:1px solid var(--green2)}
+.stream-item.warn{color:var(--amber);background:var(--amber3)}
+
+.section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.section-lbl{font-size:9px;letter-spacing:2px;font-weight:700;color:var(--txt3);margin-bottom:8px;font-family:var(--mono)}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.kpi-card{background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:8px 10px}
+.kpi-val{font-family:var(--mono);font-size:16px;font-weight:700;line-height:1}
+.kpi-lbl{font-size:9px;color:var(--txt2);margin-top:3px;letter-spacing:1px;font-family:var(--mono)}
+
+.source-pills{display:flex;flex-wrap:wrap;gap:4px}
+.pill{font-size:9px;font-family:var(--mono);padding:3px 8px;border-radius:3px;border:1px solid;letter-spacing:1px;font-weight:700}
+.pill.gov{background:rgba(0,230,118,.08);color:var(--green);border-color:rgba(0,230,118,.25)}
+.pill.mkt{background:rgba(41,121,255,.1);color:var(--blue);border-color:rgba(41,121,255,.3)}
+.pill.osint{background:rgba(213,0,249,.1);color:var(--purple);border-color:rgba(213,0,249,.3)}
+
+.score-breakdown{display:flex;flex-direction:column;gap:5px}
+.score-row{display:flex;align-items:center;gap:8px}
+.score-lbl{font-size:10px;color:var(--txt2);font-family:var(--mono);width:100px;flex-shrink:0}
+.score-bar-wrap{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.score-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.score-num{font-size:10px;font-family:var(--mono);width:28px;text-align:right;flex-shrink:0}
+
+.signal-feed{display:flex;flex-direction:column;gap:4px}
+.signal-item{font-size:10px;font-family:var(--mono);padding:5px 8px;border-radius:4px;line-height:1.5;border:1px solid}
+.signal-item.gov{background:rgba(0,230,118,.06);border-color:rgba(0,230,118,.2);color:var(--green)}
+.signal-item.mkt{background:rgba(41,121,255,.08);border-color:rgba(41,121,255,.2);color:var(--blue)}
+.signal-item.osint{background:rgba(213,0,249,.06);border-color:rgba(213,0,249,.2);color:var(--purple)}
+.signal-time{color:var(--txt3);margin-right:6px}
+
+.horizon-tabs{display:flex;gap:4px;margin-bottom:8px}
+.htab{font-size:9px;font-family:var(--mono);padding:3px 8px;border-radius:3px;cursor:pointer;border:1px solid var(--border);color:var(--txt2);transition:all .15s;letter-spacing:1px}
+.htab.active{background:var(--blue3);border-color:var(--blue2);color:var(--blue)}
+
+.forecast-bars{display:flex;flex-direction:column;gap:4px}
+.f-row{display:flex;align-items:center;gap:8px}
+.f-lbl{font-size:10px;color:var(--txt2);font-family:var(--mono);width:90px;flex-shrink:0}
+.f-bar{flex:1;height:14px;background:var(--bg4);border-radius:3px;overflow:hidden;position:relative}
+.f-fill{height:100%;border-radius:3px;transition:width .8s}
+.f-num{font-size:9px;font-family:var(--mono);position:absolute;right:5px;top:50%;transform:translateY(-50%);color:var(--txt)}
+
+.ring-chart{position:relative;width:80px;height:80px;margin:0 auto}
+.ring-chart svg{width:80px;height:80px}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-val{font-size:14px;font-weight:700;font-family:var(--mono);line-height:1}
+.ring-lbl{font-size:8px;color:var(--txt3);font-family:var(--mono)}
+
+.timestamp{position:absolute;top:12px;right:12px;font-family:var(--mono);font-size:10px;color:var(--txt3);background:rgba(10,15,28,.8);padding:4px 8px;border-radius:4px;backdrop-filter:blur(4px)}
+</style>
+
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="brand-name">URBAN<span>·</span>NEXUS</div>
+    <div class="badge live">● LIVE</div>
+    <div class="badge ai">AI GROWTH ENGINE</div>
+  </div>
+  <div class="hdr-meta">
+    <div class="meta-chip">ZONES <b id="h-zones">12</b></div>
+    <div class="meta-chip">SIGNALS <b id="h-signals">847</b></div>
+    <div class="meta-chip">HORIZON <b>24–60 MO</b></div>
+    <div class="meta-chip">CITY <b>METRO REGION</b></div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT: ZONE LIST -->
+  <div class="sidebar">
+    <div class="s-hdr">GROWTH ZONES · GVS RANKED</div>
+    <div id="zone-list"></div>
+  </div>
+
+  <!-- CENTER: HEATMAP -->
+  <div class="center">
+    <div class="map-wrap">
+      <canvas id="heatmap"></canvas>
+      <div class="timestamp" id="ts">2026-05-01 · 09:42 UTC</div>
+
+      <div class="controls">
+        <button class="ctrl-btn active" onclick="setLayer('heat')" id="btn-heat">HEAT MAP</button>
+        <button class="ctrl-btn" onclick="setLayer('muni')" id="btn-muni">MUNICIPAL</button>
+        <button class="ctrl-btn" onclick="setLayer('market')" id="btn-market">MARKET</button>
+        <button class="ctrl-btn" onclick="setLayer('infra')" id="btn-infra">INFRA PROJECTS</button>
+      </div>
+
+      <div class="legend-box">
+        <div class="legend-title">GROWTH VELOCITY SCORE</div>
+        <div class="legend-heat">
+          <div class="heat-gradient"></div>
+        </div>
+        <div class="legend-labels"><span>LOW</span><span>MED</span><span>HIGH</span></div>
+        <div style="margin-top:8px">
+          <div class="legend-dot-row"><div class="ldot" style="background:#00e676"></div>MUNICIPAL TENDER</div>
+          <div class="legend-dot-row"><div class="ldot" style="background:#2979ff"></div>MARKET CLUSTER</div>
+          <div class="legend-dot-row"><div class="ldot" style="background:var(--purple)"></div>OSINT SIGNAL</div>
+          <div class="legend-dot-row"><div class="ldot" style="background:var(--amber)"></div>INFRA PROJECT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-stream">
+      <div class="stream-lbl">DATA STREAM</div>
+      <div class="stream-items" id="stream-items"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ANALYTICS PANEL -->
+  <div class="sidebar right">
+    <div class="s-hdr">ANALYTICS · SELECTED ZONE</div>
+
+    <!-- KPI Grid -->
+    <div class="section">
+      <div class="section-lbl">ZONE KPIs</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-val" id="k-gvs" style="color:var(--heat3)">--</div>
+          <div class="kpi-lbl">GVS SCORE</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="k-psf" style="color:var(--blue)">--</div>
+          <div class="kpi-lbl">PRICE/SQ FT</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="k-rent" style="color:var(--green)">--</div>
+          <div class="kpi-lbl">RENT YIELD</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val" id="k-vel" style="color:var(--amber)">--</div>
+          <div class="kpi-lbl">PRICE VELOCITY</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Sources -->
+    <div class="section">
+      <div class="section-lbl">ACTIVE DATA SOURCES</div>
+      <div class="source-pills">
+        <div class="pill gov">MUN. CORP</div>
+        <div class="pill gov">CLU POLICY</div>
+        <div class="pill gov">INFRA TENDER</div>
+        <div class="pill mkt">99ACRES</div>
+        <div class="pill mkt">MAGICBRICKS</div>
+        <div class="pill osint">NEWS NLP</div>
+        <div class="pill osint">SOCIAL SIGNALS</div>
+        <div class="pill mkt">LISTING DENSITY</div>
+      </div>
+    </div>
+
+    <!-- GVS Breakdown -->
+    <div class="section">
+      <div class="section-lbl">GVS COMPONENT BREAKDOWN</div>
+      <div class="score-breakdown" id="gvs-breakdown"></div>
+    </div>
+
+    <!-- Signal Feed -->
+    <div class="section">
+      <div class="section-lbl">LIVE INTELLIGENCE FEED</div>
+      <div class="signal-feed" id="signal-feed"></div>
+    </div>
+
+    <!-- Forecast -->
+    <div class="section" style="border-bottom:none">
+      <div class="section-lbl">APPRECIATION FORECAST</div>
+      <div class="horizon-tabs">
+        <div class="htab active" onclick="setHorizon(24,this)">24 MO</div>
+        <div class="htab" onclick="setHorizon(36,this)">36 MO</div>
+        <div class="htab" onclick="setHorizon(60,this)">60 MO</div>
+      </div>
+      <div class="forecast-bars" id="forecast-bars"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const C = document.getElementById('heatmap');
+const ctx = C.getContext('2d');
+let W, H, animTick = 0, currentLayer = 'heat', selectedZone = null, horizonMo = 24;
+
+function resize() {
+  const r = C.parentElement.getBoundingClientRect();
+  W = C.width = r.width * devicePixelRatio;
+  H = C.height = r.height * devicePixelRatio;
+  C.style.width = r.width + 'px';
+  C.style.height = r.height + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── ZONE DATA ────────────────────────────────────────────
+const zones = [
+  {id:'Z-01',name:'Koramangala North',lat:.22,lng:.28,gvs:92,psf:8240,rent:4.8,vel:22,muni:88,market:95,osint:91,listing:87,
+   signals:[{t:'gov',msg:'New metro line tender approved — 2.4km extension'},
+            {t:'mkt',msg:'Listing density +34% QoQ — 99acres surge'},
+            {t:'osint',msg:'Social buzz index: 91/100 — viral locality posts'}]},
+  {id:'Z-02',name:'Whitefield Phase 3',lat:.35,lng:.65,gvs:88,psf:7100,rent:4.2,vel:18,muni:82,market:91,osint:85,listing:90,
+   signals:[{t:'gov',msg:'SEZ expansion CLU notification filed'},
+            {t:'mkt',msg:'Price/sqft +18% YoY — RTM vs UC gap narrowing'},
+            {t:'osint',msg:'Corp HQ relocation news flagged — 4 articles'}]},
+  {id:'Z-03',name:'Sarjapur Corridor',lat:.55,lng:.42,gvs:85,psf:6500,rent:3.9,vel:16,muni:78,market:88,osint:82,listing:85,
+   signals:[{t:'gov',msg:'Outer Ring Road widening tender — ₹420Cr allotted'},
+            {t:'mkt',msg:'MagicBricks search volume +28% MoM'},
+            {t:'osint',msg:'IT park Phase 2 groundbreaking confirmed'}]},
+  {id:'Z-04',name:'Hebbal Lake Zone',lat:.18,lng:.58,gvs:78,psf:9200,rent:3.4,vel:12,muni:92,market:72,osint:68,listing:74,
+   signals:[{t:'gov',msg:'Sewage expansion + lake rejuvenation declared'},
+            {t:'mkt',msg:'Premium segment absorption: 68% — steady'},
+            {t:'osint',msg:'Luxury residential pipeline: 3 new towers'}]},
+  {id:'Z-05',name:'Electronic City Ph2',lat:.72,lng:.30,gvs:74,psf:5800,rent:4.5,vel:14,muni:65,market:82,osint:76,listing:80,
+   signals:[{t:'mkt',msg:'Affordable segment: 340 units absorbed Q1'},
+            {t:'gov',msg:'Flyover connectivity project — Phase 1 underway'},
+            {t:'osint',msg:'Rental demand outpacing supply — 4.5% yield'}]},
+  {id:'Z-06',name:'Devanahalli Aero Hub',lat:.12,lng:.78,gvs:82,psf:4200,rent:2.8,vel:28,muni:96,market:75,osint:72,listing:65,
+   signals:[{t:'gov',msg:'Aerospace Park Phase 2 — 800 acres CLU change'},
+            {t:'gov',msg:'BIAL expansion tender ₹1,200Cr — 24mo timeline'},
+            {t:'osint',msg:'Developer interest: 6 large players scouting land'}]},
+  {id:'Z-07',name:'Yelahanka New Town',lat:.14,lng:.44,gvs:68,psf:5100,rent:3.6,vel:10,muni:60,market:74,osint:64,listing:72,
+   signals:[{t:'mkt',msg:'Listing density stable — 2.1% price appreciation'},
+            {t:'gov',msg:'Water supply upgrade tender under evaluation'},
+            {t:'osint',msg:'Social sentiment: positive, low visibility'}]},
+  {id:'Z-08',name:'Mysore Road Belt',lat:.62,lng:.18,gvs:61,psf:4600,rent:3.8,vel:8,muni:55,market:68,osint:58,listing:66,
+   signals:[{t:'mkt',msg:'Affordable housing absorption: 280 units Q1'},
+            {t:'gov',msg:'Ring Road Phase 3 — alignment finalized'},
+            {t:'osint',msg:'Low developer buzz — undervalued signal'}]},
+  {id:'Z-09',name:'JP Nagar Extension',lat:.45,lng:.25,gvs:76,psf:7800,rent:3.2,vel:11,muni:70,market:80,osint:77,listing:78,
+   signals:[{t:'mkt',msg:'RTM premium: +22% vs under-construction'},
+            {t:'gov',msg:'Park + civic infra upgrade — ₹85Cr budget'},
+            {t:'osint',msg:'Family segment demand: strong and consistent'}]},
+  {id:'Z-10',name:'Kanakapura Smart City',lat:.78,lng:.55,gvs:71,psf:3900,rent:3.1,vel:19,muni:85,market:62,osint:65,listing:55,
+   signals:[{t:'gov',msg:'Smart city mission — ₹640Cr infrastructure push'},
+            {t:'gov',msg:'Metro Phase 3 alignment confirmed via corridor'},
+            {t:'osint',msg:'Early-mover developer entries flagged x2'}]},
+  {id:'Z-11',name:'Marathahalli Hub',lat:.38,lng:.80,gvs:80,psf:7200,rent:4.0,vel:13,muni:74,market:85,osint:80,listing:82,
+   signals:[{t:'mkt',msg:'Commercial-to-residential shift detected'},
+            {t:'mkt',msg:'99acres search +41% — IT corridor demand'},
+            {t:'osint',msg:'Co-living supply gap identified — 3 operators'}]},
+  {id:'Z-12',name:'Bidadi Growth Node',lat:.82,lng:.35,gvs:55,psf:2800,rent:2.4,vel:32,muni:78,market:45,osint:42,listing:38,
+   signals:[{t:'gov',msg:'Industrial corridor + Toyota township expansion'},
+            {t:'gov',msg:'Land acquisition notification — 1,200 acres'},
+            {t:'osint',msg:'Pre-launch buzz low — high upside potential'}]},
+];
+
+function gvsColor(gvs) {
+  if(gvs >= 85) return '#dd2c00';
+  if(gvs >= 75) return '#ff6d00';
+  if(gvs >= 65) return '#ffb300';
+  return '#fff176';
+}
+
+function gvsAlpha(gvs) {
+  return 0.3 + (gvs/100) * 0.55;
+}
+
+// ── TERRAIN + HEATMAP RENDER ─────────────────────────────
+function drawBase() {
+  const dpr = devicePixelRatio;
+  ctx.fillStyle = '#05080f';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(20,40,70,0.6)';
+  ctx.lineWidth = 0.5 * dpr;
+  const g = 36 * dpr;
+  for(let x=0;x<W;x+=g){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=g){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  // Road network
+  ctx.strokeStyle='rgba(30,60,100,0.5)'; ctx.lineWidth=3*dpr;
+  // Ring road
+  ctx.beginPath(); ctx.ellipse(W*.5,H*.5,W*.38,H*.38,.1,0,Math.PI*2); ctx.stroke();
+  // Arterials
+  const roads=[[.1,.1,.9,.9],[.9,.1,.1,.9],[.5,.05,.5,.95],[.05,.5,.95,.5],[.2,.8,.8,.2]];
+  roads.forEach(([x1,y1,x2,y2])=>{
+    ctx.beginPath(); ctx.moveTo(W*x1,H*y1); ctx.lineTo(W*x2,H*y2); ctx.stroke();
+  });
+
+  // Water body
+  ctx.fillStyle='rgba(0,40,90,0.35)';
+  ctx.beginPath(); ctx.ellipse(W*.18,H*.58,W*.05,H*.07,.2,0,Math.PI*2); ctx.fill();
+
+  // Green zones
+  ctx.fillStyle='rgba(0,60,20,0.25)';
+  ctx.beginPath(); ctx.ellipse(W*.72,H*.3,W*.06,H*.05,-.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(W*.28,H*.72,W*.05,H*.06,.4,0,Math.PI*2); ctx.fill();
+}
+
+function drawHeatmap() {
+  zones.forEach(z => {
+    const nx = z.lng * W;
+    const ny = z.lat * H;
+    const radius = (W * 0.12) * (z.gvs / 100) * (0.85 + .15 * Math.sin(animTick * 0.04 + z.lat * 10));
+    const grad = ctx.createRadialGradient(nx, ny, 0, nx, ny, radius);
+    const col = gvsColor(z.gvs);
+    const alpha = gvsAlpha(z.gvs);
+    grad.addColorStop(0, col + 'cc');
+    grad.addColorStop(0.4, col + '66');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(nx, ny, radius, 0, Math.PI*2); ctx.fill();
+  });
+}
+
+function drawMuniLayer() {
+  zones.forEach(z => {
+    if(z.muni < 60) return;
+    const nx=z.lng*W, ny=z.lat*H;
+    const r=(z.muni/100)*W*.08;
+    ctx.strokeStyle=`rgba(0,230,118,${.2+z.muni/200})`;
+    ctx.lineWidth=2*devicePixelRatio;
+    ctx.setLineDash([4*devicePixelRatio,4*devicePixelRatio]);
+    ctx.beginPath(); ctx.arc(nx,ny,r,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    // Pulse ring
+    const pr=r + 8*devicePixelRatio*Math.abs(Math.sin(animTick*.06));
+    ctx.strokeStyle=`rgba(0,230,118,${.08+.04*Math.sin(animTick*.06)})`;
+    ctx.lineWidth=devicePixelRatio;
+    ctx.beginPath(); ctx.arc(nx,ny,pr,0,Math.PI*2); ctx.stroke();
+  });
+}
+
+function drawMarketLayer() {
+  zones.forEach(z => {
+    const nx=z.lng*W, ny=z.lat*H;
+    const r=(z.market/100)*W*.07;
+    ctx.strokeStyle=`rgba(41,121,255,${.25+z.market/400})`;
+    ctx.lineWidth=1.5*devicePixelRatio;
+    ctx.beginPath(); ctx.arc(nx,ny,r,0,Math.PI*2); ctx.stroke();
+  });
+}
+
+function drawInfraLayer() {
+  // Simulated infra project markers (lines between nodes)
+  const pairs=[[0,1],[1,2],[3,10],[5,6],[8,9],[9,11]];
+  pairs.forEach(([a,b])=>{
+    const za=zones[a], zb=zones[b];
+    ctx.strokeStyle='rgba(255,171,0,0.4)';
+    ctx.lineWidth=2*devicePixelRatio;
+    ctx.setLineDash([6*devicePixelRatio,6*devicePixelRatio]);
+    ctx.beginPath(); ctx.moveTo(za.lng*W,za.lat*H); ctx.lineTo(zb.lng*W,zb.lat*H); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+}
+
+function drawNodes() {
+  const dpr=devicePixelRatio;
+  zones.forEach(z => {
+    const nx=z.lng*W, ny=z.lat*H;
+    const R=7*dpr;
+    const col=gvsColor(z.gvs);
+    const isSelected=selectedZone&&selectedZone.id===z.id;
+
+    // Pulse for high GVS
+    if(z.gvs>=80){
+      const pr=R+(6+3*Math.sin(animTick*.08+z.gvs))*dpr;
+      ctx.strokeStyle=col+'44'; ctx.lineWidth=2*dpr;
+      ctx.beginPath(); ctx.arc(nx,ny,pr,0,Math.PI*2); ctx.stroke();
+    }
+
+    ctx.fillStyle=col+(isSelected?'ff':'cc');
+    ctx.beginPath(); ctx.arc(nx,ny,R*(isSelected?1.3:1),0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=isSelected?'#fff':col;
+    ctx.lineWidth=(isSelected?2.5:1)*dpr;
+    ctx.stroke();
+
+    // Label
+    ctx.fillStyle=isSelected?'#fff':'rgba(200,216,240,.8)';
+    ctx.font=`${isSelected?500:400} ${9*dpr}px 'JetBrains Mono',monospace`;
+    ctx.textAlign='center';
+    ctx.fillText(z.id, nx, ny-R-4*dpr);
+
+    // Cross markers for different sources
+    if(currentLayer==='muni'&&z.muni>70){
+      ctx.fillStyle='#00e676'; ctx.beginPath();
+      ctx.arc(nx+R+2*dpr,ny-R-2*dpr,3*dpr,0,Math.PI*2); ctx.fill();
+    }
+    if(currentLayer==='market'&&z.market>75){
+      ctx.fillStyle='#2979ff'; ctx.beginPath();
+      ctx.arc(nx+R+2*dpr,ny-R-2*dpr,3*dpr,0,Math.PI*2); ctx.fill();
+    }
+
+    z._nx=nx; z._ny=ny; z._r=R+10*dpr;
+  });
+}
+
+function drawFrame() {
+  ctx.clearRect(0,0,W,H);
+  drawBase();
+  if(currentLayer==='heat'||currentLayer==='all') drawHeatmap();
+  if(currentLayer==='muni') drawMuniLayer();
+  if(currentLayer==='market') drawMarketLayer();
+  if(currentLayer==='infra') drawInfraLayer();
+  drawNodes();
+}
+
+// ── ZONE LIST ────────────────────────────────────────────
+function renderZoneList() {
+  const sorted=[...zones].sort((a,b)=>b.gvs-a.gvs);
+  document.getElementById('zone-list').innerHTML=sorted.map((z,i)=>{
+    const cls=z.gvs>=80?'gvs-high':z.gvs>=65?'gvs-med':'gvs-low';
+    const isActive=selectedZone&&selectedZone.id===z.id;
+    return `<div class="zone-card${isActive?' active':''}" onclick="selectZone('${z.id}')">
+      <div class="zone-top">
+        <span class="zone-name" style="color:${gvsColor(z.gvs)}">${z.name}</span>
+        <span class="gvs-badge ${cls}">GVS ${z.gvs}</span>
+      </div>
+      <div class="zone-meta">
+        ₹${z.psf.toLocaleString()}/sqft &nbsp;·&nbsp; Yield: ${z.rent}% &nbsp;·&nbsp; Vel: +${z.vel}%/yr
+      </div>
+      <div class="signal-bar">
+        <div class="signal-fill" style="width:${z.gvs}%;background:${gvsColor(z.gvs)}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── SELECT ZONE ──────────────────────────────────────────
+function selectZone(id) {
+  selectedZone = zones.find(z=>z.id===id);
+  renderZoneList();
+  renderAnalytics();
+}
+
+function renderAnalytics() {
+  if(!selectedZone) return;
+  const z=selectedZone;
+  document.getElementById('k-gvs').textContent=z.gvs;
+  document.getElementById('k-psf').textContent='₹'+z.psf.toLocaleString();
+  document.getElementById('k-rent').textContent=z.rent+'%';
+  document.getElementById('k-vel').textContent='+'+z.vel+'%';
+
+  // GVS breakdown
+  const comps=[
+    {lbl:'Municipal Decl.',val:z.muni,col:'#00e676'},
+    {lbl:'Market Activity',val:z.market,col:'#2979ff'},
+    {lbl:'OSINT Sentiment',val:z.osint,col:'#d500f9'},
+    {lbl:'Listing Density',val:z.listing,col:'#ffab00'},
+  ];
+  document.getElementById('gvs-breakdown').innerHTML=comps.map(c=>`
+    <div class="score-row">
+      <div class="score-lbl">${c.lbl}</div>
+      <div class="score-bar-wrap"><div class="score-bar-fill" style="width:${c.val}%;background:${c.col}"></div></div>
+      <div class="score-num" style="color:${c.col}">${c.val}</div>
+    </div>`).join('');
+
+  // Signal feed
+  document.getElementById('signal-feed').innerHTML=z.signals.map(s=>`
+    <div class="signal-item ${s.t}">
+      <span class="signal-time">${['09:38','09:41','09:44'][Math.floor(Math.random()*3)]}</span>${s.msg}
+    </div>`).join('');
+
+  renderForecast();
+}
+
+function renderForecast() {
+  if(!selectedZone) return;
+  const z=selectedZone;
+  const multiplier={24:1,36:1.5,60:2.4}[horizonMo];
+  const zones_comp=[
+    {lbl:'Price Appreciation',val:Math.min(99,Math.round(z.vel*multiplier)),col:'#ff6d00'},
+    {lbl:'Rental Yield Δ',val:Math.min(99,Math.round(z.rent*multiplier*3)),col:'#00e676'},
+    {lbl:'Market Depth',val:Math.min(99,Math.round(z.market*.95)),col:'#2979ff'},
+    {lbl:'Infra Impact',val:Math.min(99,Math.round(z.muni*.9)),col:'#d500f9'},
+    {lbl:'Overall ROI Score',val:Math.min(99,Math.round(z.gvs*.95)),col:'#ffab00'},
+  ];
+  document.getElementById('forecast-bars').innerHTML=zones_comp.map(c=>`
+    <div class="f-row">
+      <div class="f-lbl">${c.lbl}</div>
+      <div class="f-bar">
+        <div class="f-fill" style="width:${c.val}%;background:${c.col}"></div>
+        <div class="f-num">${c.val}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── CONTROLS ────────────────────────────────────────────
+function setLayer(l) {
+  currentLayer=l;
+  ['heat','muni','market','infra'].forEach(x=>{
+    document.getElementById('btn-'+x).classList.toggle('active',x===l);
+  });
+}
+
+function setHorizon(mo,el) {
+  horizonMo=mo;
+  document.querySelectorAll('.htab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderForecast();
+}
+
+// ── DATA STREAM ──────────────────────────────────────────
+const STREAM_TEMPLATES=[
+  {t:'new',msg:'MUN·TENDER·Z-06: ₹1,200Cr BIAL expansion filed'},
+  {t:'new',msg:'MARKET·Z-01: 99acres listings +34% — spike detected'},
+  {t:'',   msg:'OSINT·Z-02: CLU notification indexed from portal'},
+  {t:'warn',msg:'PRICE·Z-09: RTM premium widening — 22% gap'},
+  {t:'',   msg:'SIGNAL·Z-05: Rental absorption at 4.5% — strong'},
+  {t:'new',msg:'GOV·Z-10: Smart city ₹640Cr allocated — confirmed'},
+  {t:'',   msg:'NLP·Z-03: IT park groundbreaking — 4 news sources'},
+  {t:'warn',msg:'ALERT·Z-12: Pre-launch velocity +32%/yr — watch'},
+  {t:'',   msg:'LISTING·Z-11: Search vol +41% — IT corridor demand'},
+  {t:'new',msg:'CLU·Z-06: 800 acres aerospace park reclassified'},
+];
+let streamIdx=0;
+let streamItems=[];
+function updateStream() {
+  const item=STREAM_TEMPLATES[streamIdx%STREAM_TEMPLATES.length];
+  streamIdx++;
+  streamItems.unshift(item);
+  if(streamItems.length>14) streamItems.pop();
+  document.getElementById('stream-items').innerHTML=
+    streamItems.map(s=>`<div class="stream-item${s.t?' '+s.t:''}">${s.msg}</div>`).join('');
+}
+
+// ── HEADER COUNTERS ──────────────────────────────────────
+let sigCount=847;
+function updateHeader() {
+  sigCount+=Math.floor(Math.random()*3);
+  document.getElementById('h-signals').textContent=sigCount.toLocaleString();
+  const now=new Date();
+  document.getElementById('ts').textContent=
+    now.toISOString().replace('T',' ').substring(0,16)+' UTC';
+}
+
+// ── MAP CLICK ────────────────────────────────────────────
+C.addEventListener('click',e=>{
+  const r=C.getBoundingClientRect();
+  const mx=(e.clientX-r.left)*devicePixelRatio;
+  const my=(e.clientY-r.top)*devicePixelRatio;
+  zones.forEach(z=>{
+    if(z._nx&&Math.hypot(mx-z._nx,my-z._ny)<z._r) selectZone(z.id);
+  });
+});
+
+// ── INIT & LOOP ──────────────────────────────────────────
+selectZone('Z-01');
+
+let frame=0;
+function loop() {
+  requestAnimationFrame(loop);
+  animTick++; frame++;
+  if(frame%2===0) drawFrame();
+  if(frame%90===0) { updateStream(); updateHeader(); }
+}
+
+renderZoneList();
+loop();
+</script>

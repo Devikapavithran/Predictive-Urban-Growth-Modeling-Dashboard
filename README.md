@@ -2,8 +2,7 @@
 
 **A predictive geospatial analytics engine that identifies real estate investment hotspots by fusing municipal declarations, market intelligence, and OSINT signals into a unified Growth Velocity Score — projected over a 24–60 month horizon.**
 
-[🚀 Live Demo](https://devikapavithran.github.io/Predictive-Urban-Growth-Modeling-Dashboard/) &nbsp;·&nbsp; [📄 Problem Statement](#problem-statement) &nbsp;·&nbsp; [⚙️ Features](#features) &nbsp;·&nbsp; [🧠 How It Works](#how-it-works)
-
+[🚀 Live Demo](https://devikapavithran.github.io/Predictive-Urban-Growth-Modeling-Dashboard/) &nbsp;·&nbsp; 
 </div>
 
 ---
